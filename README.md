@@ -109,6 +109,15 @@ statistiques sont des compteurs dans un fichier JSON local.
 
 L'architecture détaillée est dans [ARCHITECTURE.md](./ARCHITECTURE.md).
 
+### Licence
+
+Le code de Laneform est publié sous licence MIT — voir [LICENSE](./LICENSE).
+
+Cette licence ne couvre que ce code. Les données de jeu, noms et images
+proviennent de Riot Games et restent leur propriété ; l'application les lit
+depuis votre client League au moment de l'exécution et n'en redistribue
+aucune.
+
 ### Règles non négociables
 
 1. **Rien d'autre que `@laneform/riot-client` n'appelle riotgames.com.** Le
