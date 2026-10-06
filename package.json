@@ -1,0 +1,24 @@
+{
+  "name": "laneform",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "typecheck": "tsc --noEmit --pretty",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "fmt": "prettier --write .",
+    "db:generate": "npm run -w @laneform/db generate",
+    "db:migrate": "npm run -w @laneform/db migrate",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
