@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Laneform — Collecte</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <header class="head">
+      <h1 class="head__title">Collecte</h1>
+      <div class="head__right">
+        <label id="patch-label" class="head__label" for="patch">Patch</label>
+        <select id="patch" class="select"></select>
+        <button id="export" class="select" type="button" title="Enregistrer la collecte dans un fichier à partager">
+          Exporter…
+        </button>
+        <button id="import" class="select" type="button" title="Remplacer la collecte locale par un fichier reçu">
+          Importer…
+        </button>
+        <button id="purge" class="select select--danger" type="button" title="Effacer définitivement la collecte locale">
+          Purger…
+        </button>
+      </div>
+    </header>
+
+    <section class="tiles" id="tiles"></section>
+    <p class="warning" id="warning"></p>
+
+    <main class="grid">
+      <section class="panel">
+        <div class="panel__bar">
+          <h2 class="panel__title">Champions collectés</h2>
+          <span id="count" class="panel__count"></span>
+        </div>
+
+        <div class="filters">
+          <input
+            id="search"
+            class="input"
+            type="search"
+            placeholder="Filtrer un champion…"
+            spellcheck="false"
+            autocomplete="off"
+            aria-label="Filtrer les champions"
+          />
+        </div>
+
+        <div class="table" role="table" aria-label="Champions collectés">
+          <div class="table__head" role="row">
+            <button type="button" class="th" data-sort="name" role="columnheader">Champion</button>
+            <button type="button" class="th" data-sort="role" role="columnheader">Rôle</button>
+            <button type="button" class="th th--num" data-sort="games" role="columnheader">Parties</button>
+            <button type="button" class="th th--num" data-sort="winRate" role="columnheader">Victoires</button>
+          </div>
+          <div id="rows" class="table__body"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title" id="detail-title">Détail</h2>
+        <div id="roles" class="roles"></div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab tab--active" type="button" role="tab" data-tab="runes">Runes</button>
+          <button class="tab" type="button" role="tab" data-tab="items">Objets</button>
+          <button class="tab" type="button" role="tab" data-tab="matchups">Matchups</button>
+        </div>
+
+        <div class="panel__scroll">
+          <div class="pane" data-pane="runes">
+            <div id="loadout" class="order"></div>
+          </div>
+          <div class="pane" data-pane="items" hidden>
+            <div id="detail" class="detail"></div>
+            <div id="order" class="order"></div>
+          </div>
+          <div class="pane" data-pane="matchups" hidden>
+            <div id="matchups" class="order"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="legal">
+      <span class="legal__notice">
+        Laneform n’est pas affilié à Riot Games. League of Legends est une marque déposée de
+        Riot Games, Inc.
+      </span>
+      <button id="privacy-toggle" class="legal__link" type="button">Confidentialité</button>
+    </footer>
+
+    <div id="privacy" class="sheet" hidden>
+      <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
+        <h2 class="sheet__title" id="privacy-title">Confidentialité</h2>
+
+        <p class="sheet__text">
+          Laneform ne crée aucun compte, ne mesure pas votre usage et n’envoie aucune donnée à
+          ses auteurs. Tout ce que l’application produit reste dans
+          <code>%APPDATA%\Laneform\</code>.
+        </p>
+
+        <p class="sheet__text">
+          Les parties collectées ne sont pas conservées : elles sont réduites à des compteurs
+          puis jetées. Aucun nom de joueur ni identifiant de compte n’est enregistré. Votre
+          historique personnel est lu dans votre client League et ne quitte pas votre machine.
+        </p>
+
+        <p class="sheet__text">
+          Sortent de votre machine : les requêtes vers l’API officielle de Riot Games, et — si
+          vous avez configuré un service de rangs — la région et les pseudonymes publics des
+          joueurs de votre partie. Ce service ne les conserve pas ; les rangs obtenus sont mis
+          en cache dix minutes puis oubliés.
+        </p>
+
+        <p class="sheet__text">
+          L’application lit uniquement les interfaces officielles de Riot Games. Elle
+          n’interagit jamais avec le processus du jeu, ne lit pas sa mémoire et n’automatise
+          aucune action.
+        </p>
+
+        <p class="sheet__text sheet__text--muted">
+          Pour tout supprimer : fermez l’application et effacez le dossier
+          <code>%APPDATA%\Laneform\</code>. Le texte complet figure dans le fichier
+          <code>PRIVACY.md</code> du projet.
+        </p>
+
+        <div class="sheet__actions">
+          <button id="privacy-close" class="btn-close" type="button">Fermer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tooltip" class="tooltip" hidden></div>
+    <script src="dashboard.js"></script>
+  </body>
+</html>

@@ -1,0 +1,659 @@
+/* Palette de données validée pour fond sombre (six contrôles du guide dataviz) :
+   #2f86e0 / #e05252 — bande de clarté, chroma, séparation CVD ΔE 21,4 (protan)
+   et contraste >= 3:1. L'habillage (surfaces, dégradés, états) peut être riche,
+   l'encodage des données reste sur cette paire et la couleur n'y porte jamais
+   seule l'information. */
+:root {
+  --bg: #0d0f15;
+  --bg-glow: #141927;
+  --panel: #151925;
+  --panel-raised: #1a1f2e;
+  --panel-hover: #1f2537;
+  --border: #252b3b;
+  --border-strong: #323a4f;
+
+  --text: #eef1f6;
+  --muted: #98a2b6;
+  --faint: #656e82;
+
+  --above: #2f86e0;
+  --below: #e05252;
+  --neutral: #5b6372;
+  --bar: #2f86e0;
+  --bar-soft: #1f5fa3;
+  --warn: #e0b252;
+  --ok: #3fb97a;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  /* Une seule courbe pour tout : les durées changent, le rythme non. */
+  --ease: cubic-bezier(0.2, 0.8, 0.25, 1);
+  --fast: 120ms;
+  --slow: 420ms;
+}
+
+/* Respecte le réglage système : des transitions non désirées peuvent gêner
+   jusqu'à provoquer un malaise. On coupe tout, on ne ralentit pas. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background:
+    radial-gradient(1200px 600px at 12% -10%, var(--bg-glow), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, #16202f, transparent 55%),
+    var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- En-tête -------------------------------------------------------------- */
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px 14px;
+  flex-wrap: wrap;
+}
+
+.head__title {
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  background: linear-gradient(100deg, #ffffff, #9ec8ff 70%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.head__right { display: flex; align-items: center; gap: 9px; }
+.head__label {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.select {
+  background: var(--panel-raised);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.select:hover { border-color: var(--border-strong); background: var(--panel-hover); }
+.select:focus-visible { outline: 2px solid var(--above); outline-offset: 1px; }
+
+/* --- Tuiles --------------------------------------------------------------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 11px;
+  padding: 0 22px 14px;
+}
+
+.tile {
+  position: relative;
+  background: linear-gradient(170deg, var(--panel-raised), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  overflow: hidden;
+  transition: transform var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.tile:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+
+/* Liseré supérieur : rappel visuel, sans encoder de donnée. */
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--bar-soft), transparent);
+  opacity: 0.8;
+}
+
+.tile__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.tile__value {
+  font-size: 23px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.tile__hint { font-size: 11px; color: var(--faint); margin-top: 4px; }
+
+.tile__state { display: flex; align-items: center; gap: 7px; }
+
+/* Pastille d'état : toujours accompagnée du mot (« en cours », « en pause »),
+   jamais seule — la couleur ne doit pas porter l'information. */
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+  flex: none;
+}
+.dot--live { background: var(--ok); animation: pulse 2.4s var(--ease) infinite; }
+.dot--paused { background: var(--warn); }
+.dot--error { background: var(--below); }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(63, 185, 122, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(63, 185, 122, 0); }
+}
+
+.warning {
+  margin: 0 22px 11px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: var(--warn);
+  background: rgba(224, 178, 82, 0.08);
+  border: 1px solid rgba(224, 178, 82, 0.22);
+  border-radius: var(--radius-sm);
+}
+.warning:empty { display: none; }
+
+/* --- Grille principale ---------------------------------------------------- */
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 13px;
+  padding: 0 22px 22px;
+  min-height: 0;
+}
+
+.panel {
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel__bar { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.panel__title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  font-weight: 650;
+  margin-bottom: 11px;
+}
+.panel__count { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+.filters { margin-bottom: 10px; }
+
+.input {
+  width: 100%;
+  background: #11151f;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
+  color: var(--text);
+  font-size: 12px;
+  transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.input::placeholder { color: var(--faint); }
+.input:focus {
+  outline: none;
+  border-color: var(--above);
+  box-shadow: 0 0 0 3px rgba(47, 134, 224, 0.15);
+}
+
+/* --- Tableau -------------------------------------------------------------- */
+
+.table { display: flex; flex-direction: column; min-height: 0; }
+
+.table__head,
+.table__row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.9fr 0.7fr 0.85fr;
+  gap: 9px;
+  padding: 7px 9px;
+  align-items: center;
+}
+.table__head { border-bottom: 1px solid var(--border); padding-bottom: 9px; }
+
+.th {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--faint);
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--fast) var(--ease);
+}
+.th--num { justify-content: flex-end; }
+.th:hover { color: var(--muted); }
+.th--active { color: var(--text); }
+.th:focus-visible { outline: 2px solid var(--above); outline-offset: 3px; border-radius: 3px; }
+.th__arrow { font-size: 9px; }
+
+.table__body { overflow-y: auto; min-height: 0; scrollbar-width: thin; }
+.table__body::-webkit-scrollbar { width: 9px; }
+.table__body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.table__row {
+  position: relative;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.table__row:hover { background: var(--panel-hover); transform: translateX(2px); }
+.table__row--active { background: #222a3d; }
+
+/* Liseré de sélection, qui s'étire depuis le haut. */
+.table__row--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 99px;
+  background: var(--above);
+}
+
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.role { color: var(--muted); font-size: 12px; }
+
+.wr { text-align: right; font-variant-numeric: tabular-nums; }
+.wr--above { color: var(--above); }
+.wr--below { color: var(--below); }
+.wr--unknown { color: var(--neutral); }
+
+/* --- Détail --------------------------------------------------------------- */
+
+.roles { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+
+.role-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 99px;
+  padding: 4px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+.role-btn:hover { border-color: var(--border-strong); color: var(--text); }
+.role-btn:focus-visible { outline: 2px solid var(--above); outline-offset: 2px; }
+.role-btn--active {
+  border-color: rgba(47, 134, 224, 0.55);
+  color: var(--text);
+  background: rgba(47, 134, 224, 0.12);
+}
+
+.panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 2px;
+}
+.panel__scroll::-webkit-scrollbar { width: 9px; }
+.panel__scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.detail { min-height: 0; }
+.detail__summary { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.detail__empty, .empty { font-size: 12px; color: var(--faint); padding: 10px 2px; }
+
+/* Barres : série unique, donc teinte unique et pas de légende — le titre nomme
+   la mesure. Extrémité donnée arrondie, base carrée, 2px entre les pistes. */
+.bars { display: flex; flex-direction: column; gap: 2px; }
+
+.bar-row {
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  transition: background var(--fast) var(--ease);
+}
+.bar-row:hover { background: rgba(255, 255, 255, 0.03); }
+
+.bar-row__head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.bar-row__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row__value { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+.bar-track {
+  height: 9px;
+  background: #11151f;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bar-soft), var(--bar));
+  border-radius: 0 4px 4px 0;
+  min-width: 2px;
+  /* La largeur s'anime : à chaque rafraîchissement les barres glissent vers
+     leur nouvelle valeur au lieu de sauter. */
+  transition: width var(--slow) var(--ease);
+}
+
+.collector { margin-top: 10px; font-size: 10px; color: var(--muted); }
+
+/* --- Infobulle ------------------------------------------------------------ */
+
+.tooltip {
+  position: fixed;
+  background: rgba(9, 12, 18, 0.96);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  animation: tip-in 120ms var(--ease);
+}
+.tooltip[hidden] { display: none; }
+.tooltip__line { color: var(--muted); }
+.tooltip__line:first-child { color: var(--text); font-weight: 600; }
+
+@keyframes tip-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* --- Adaptatif ------------------------------------------------------------ */
+
+/* Sous 900px les deux panneaux ne tiennent plus côte à côte : on empile, et le
+   détail garde une hauteur utile plutôt que d'être écrasé. */
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; overflow-y: auto; }
+  .panel { min-height: 280px; }
+}
+
+@media (max-width: 620px) {
+  .head, .tiles, .warning, .grid { padding-left: 14px; padding-right: 14px; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); }
+  .tile__value { font-size: 20px; }
+  /* La colonne « rôle » est la première sacrifiable : elle est reprise dans le
+     panneau de détail juste en dessous. */
+  .table__head > :nth-child(2), .table__row > :nth-child(2) { display: none; }
+  .table__head, .table__row { grid-template-columns: 1.5fr 0.7fr 0.9fr; }
+}
+
+/* --- Icônes --------------------------------------------------------------- */
+
+.labelled {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.labelled__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  flex: none;
+  background: #11151f;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  transition: transform var(--fast) var(--ease);
+}
+.table__row:hover .icon,
+.bar-row:hover .icon { transform: scale(1.08); }
+
+/* Dans la liste d'objets, l'icône est un peu plus grande : c'est l'information
+   que l'œil cherche en premier sur un build. */
+.bar-row__name .icon { width: 22px; height: 22px; }
+
+/* --- Ordre de construction ------------------------------------------------ */
+
+.order {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.order__group { margin-bottom: 11px; }
+.order__group:last-child { margin-bottom: 0; }
+
+.order__title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  margin-bottom: 5px;
+}
+
+.order__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 7px;
+  border-radius: var(--radius-sm);
+  cursor: default;
+  transition: background var(--fast) var(--ease);
+}
+.order__row:hover { background: rgba(255, 255, 255, 0.05); }
+
+.order__items { display: flex; align-items: center; gap: 7px; min-width: 0; flex-wrap: wrap; }
+
+/* Dans une séquence, le nom écrit prendrait toute la largeur : l'icône porte
+   la reconnaissance, l'infobulle et l'attribut title donnent le nom. D'où une
+   taille nettement plus grande qu'ailleurs — c'est le seul repère visuel. */
+.order__item .labelled__text { display: none; }
+.order__item .icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+}
+.order__row:hover .order__item .icon { transform: scale(1.06); }
+.order__arrow { color: var(--faint); font-size: 15px; }
+
+.order__group { margin-bottom: 13px; }
+
+/* --- Duels de couloir ----------------------------------------------------- */
+
+.matchup {
+  display: grid;
+  grid-template-columns: 1.1fr auto auto 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 7px;
+  border-radius: var(--radius-sm);
+  cursor: default;
+  transition: background var(--fast) var(--ease);
+}
+.matchup:hover { background: rgba(255, 255, 255, 0.05); }
+
+.matchup__name { min-width: 0; }
+.matchup__name .icon { width: 26px; height: 26px; }
+
+.matchup__items { display: flex; align-items: center; gap: 4px; }
+.matchup__items .icon { width: 22px; height: 22px; }
+
+/* Signe écrit, couleur en renfort : la paire est celle validée pour les taux
+   de victoire, et l'écart d'or a la même polarité autour de zéro. */
+.gold { font-variant-numeric: tabular-nums; font-size: 12px; white-space: nowrap; }
+
+@media (max-width: 620px) {
+  .matchup { grid-template-columns: 1fr auto auto; }
+  .matchup__items { display: none; }
+}
+
+/* Action destructive : teinte d'alerte au survol seulement, pour qu'elle ne
+   tire pas l'œil en permanence dans la barre d'outils. */
+.select--danger:hover {
+  border-color: rgba(224, 82, 82, 0.5);
+  color: var(--below);
+}
+
+/* --- Onglets -------------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 11px;
+  padding: 3px;
+  background: #11151f;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.tab:hover { color: var(--text); }
+.tab:focus-visible { outline: 2px solid var(--above); outline-offset: -2px; }
+.tab--active {
+  background: var(--panel-hover);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pane[hidden] { display: none; }
+
+/* Le premier bloc d'un onglet n'a pas à être séparé du haut. */
+.pane > .order:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+/* Dans la liste complète des runes, une seule icône par ligne : on garde le
+   nom écrit, c'est ce qui permet de la retrouver. */
+.order__group .labelled__text { display: initial; }
+.order__item .labelled__text { display: none; }
+
+/* --- Mentions légales ----------------------------------------------------- */
+
+/* Toujours visible : la non-affiliation est une obligation, pas une option
+   reléguée derrière un bouton. */
+.legal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 22px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--faint);
+  flex: none;
+}
+
+.legal__notice { line-height: 1.4; }
+
+.legal__link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease);
+}
+.legal__link:hover { color: var(--text); }
+.legal__link:focus-visible { outline: 2px solid var(--above); outline-offset: 2px; }
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 13, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 20;
+  animation: tip-in 140ms var(--ease);
+}
+.sheet[hidden] { display: none; }
+
+.sheet__panel {
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  max-width: 560px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.sheet__title { font-size: 16px; font-weight: 650; margin-bottom: 12px; }
+.sheet__text { font-size: 13px; line-height: 1.6; color: var(--muted); margin-bottom: 11px; }
+.sheet__text--muted { color: var(--faint); font-size: 12px; }
+.sheet__text code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.sheet__actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+
+.btn-close {
+  background: var(--panel-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease);
+}
+.btn-close:hover { border-color: var(--border-strong); }
+.btn-close:focus-visible { outline: 2px solid var(--above); outline-offset: 2px; }
+
+@media (max-width: 620px) {
+  .legal { padding-left: 14px; padding-right: 14px; flex-direction: column; align-items: flex-start; gap: 5px; }
+}

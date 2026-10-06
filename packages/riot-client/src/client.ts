@@ -1,11 +1,9 @@
-import { request } from 'undici';
-import type Redis from 'ioredis';
 import {
   type Platform,
   platformHost,
   regionalHost,
 } from '@laneform/shared';
-import { RedisRateLimiter, type Bucket } from './limiter.ts';
+import type { Bucket, RateLimiter } from './limiter.ts';
 import {
   applyHeadroom,
   formatRateLimits,
@@ -23,6 +21,7 @@ import type {
   AccountDto,
   CurrentGameDto,
   LeagueEntryDto,
+  LeagueListDto,
   MatchDto,
   MatchIdsQuery,
   SummonerDto,
@@ -31,7 +30,8 @@ import type {
 
 export interface RiotClientOptions {
   apiKey: string;
-  redis: Redis;
+  /** `MemoryRateLimiter` en mono-process, `RedisRateLimiter` si la clé est partagée. */
+  limiter: RateLimiter;
   /** Plafonds applicatifs de la clé, p.ex. `[{count:20,windowSeconds:1}, …]`. */
   appLimits: RateLimit[];
   /** Fraction du quota réellement consommée (0.9 = 10 % de marge). */
@@ -40,6 +40,16 @@ export interface RiotClientOptions {
   maxWaitMs?: number;
   /** Tentatives sur erreur serveur (5xx / réseau). */
   maxRetries?: number;
+  /**
+   * Budget secondaire, plus strict que le plafond applicatif.
+   *
+   * Sert à borner le trafic de fond : le collecteur consomme à la fois le
+   * bucket `app` et ce bucket-ci, alors que les appels interactifs ne
+   * consomment que `app`. Quand le budget de fond est épuisé, la collecte
+   * attend mais l'interactif garde du quota disponible. Sans ce mécanisme, un
+   * crawler sature la clé et les rangs n'arrivent jamais en début de partie.
+   */
+  secondaryBudget?: { scope: string; fraction: number };
   logger?: { warn(o: unknown, m?: string): void; debug(o: unknown, m?: string): void };
 }
 
@@ -61,7 +71,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * le rate limiter n'a de sens que s'il voit 100 % du trafic.
  */
 export class RiotClient {
-  private readonly limiter: RedisRateLimiter;
+  private readonly limiter: RateLimiter;
   private readonly appLimits: RateLimit[];
   private readonly headroom: number;
   private readonly maxWaitMs: number;
@@ -71,7 +81,7 @@ export class RiotClient {
   private readonly methodLimits = new Map<string, RateLimit[]>();
 
   constructor(private readonly opts: RiotClientOptions) {
-    this.limiter = new RedisRateLimiter(opts.redis);
+    this.limiter = opts.limiter;
     this.headroom = opts.headroom ?? 0.9;
     this.appLimits = applyHeadroom(opts.appLimits, this.headroom);
     this.maxWaitMs = opts.maxWaitMs ?? 30_000;
@@ -97,6 +107,20 @@ export class RiotClient {
       method: 'summoner-v4.byPuuid',
       host: platformHost(platform),
       path: `/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`,
+      platform,
+    });
+  }
+
+  /**
+   * Ladder Challenger d'une file. Sert d'amorce au collecteur : ces comptes
+   * jouent beaucoup, et leurs parties donnent accès à neuf autres joueurs
+   * chacune.
+   */
+  async challengerLeague(platform: Platform, queue = 'RANKED_SOLO_5x5') {
+    return this.call<LeagueListDto>({
+      method: 'league-v4.challengerLeague',
+      host: platformHost(platform),
+      path: `/lol/league/v4/challengerleagues/by-queue/${queue}`,
       platform,
     });
   }
@@ -160,6 +184,14 @@ export class RiotClient {
 
   private buckets(method: string, platform: Platform): Bucket[] {
     const out: Bucket[] = this.appLimits.map((limit) => ({ scope: 'app', limit }));
+
+    const budget = this.opts.secondaryBudget;
+    if (budget) {
+      for (const limit of applyHeadroom(this.appLimits, budget.fraction)) {
+        out.push({ scope: budget.scope, limit });
+      }
+    }
+
     // Tant que le plafond de la méthode n'a pas été découvert via les en-têtes,
     // seul le plafond applicatif s'applique. C'est le comportement voulu : le
     // premier appel sert de sonde, et les suivants sont correctement bornés.
@@ -197,26 +229,21 @@ export class RiotClient {
   private async syncFromHeaders(
     method: string,
     platform: Platform,
-    headers: Record<string, string | string[] | undefined>,
+    headers: Headers,
   ): Promise<void> {
-    const h = (name: string): string | null => {
-      const v = headers[name];
-      return typeof v === 'string' ? v : Array.isArray(v) ? (v[0] ?? null) : null;
-    };
-
     // Les plafonds de méthode ne sont pas documentés par endpoint : Riot les
     // annonce dans la réponse. On les mémorise au premier appel réussi.
-    const methodLimitHeader = h('x-method-rate-limit');
+    const methodLimitHeader = headers.get('x-method-rate-limit');
     if (methodLimitHeader) {
       const parsed = parseRateLimits(methodLimitHeader);
       if (parsed.length > 0) this.methodLimits.set(`${method}:${platform}`, parsed);
     }
 
     const obs: { scope: string; count: number; windowSeconds: number }[] = [];
-    for (const l of parseRateLimits(h('x-app-rate-limit-count'))) {
+    for (const l of parseRateLimits(headers.get('x-app-rate-limit-count'))) {
       obs.push({ scope: 'app', count: l.count, windowSeconds: l.windowSeconds });
     }
-    for (const l of parseRateLimits(h('x-method-rate-limit-count'))) {
+    for (const l of parseRateLimits(headers.get('x-method-rate-limit-count'))) {
       obs.push({ scope: `m:${method}:${platform}`, count: l.count, windowSeconds: l.windowSeconds });
     }
     await this.limiter.sync(obs);
@@ -233,53 +260,49 @@ export class RiotClient {
     for (;;) {
       await this.waitForSlot(o.method, o.platform);
 
-      let status: number;
-      let headers: Record<string, string | string[] | undefined>;
+      let response: Response;
       let body: string;
       try {
-        const res = await request(url, {
+        // `fetch` natif : identique sous Node 18+, et seul transport
+        // disponible dans un runtime de périphérie comme Cloudflare Workers.
+        response = await fetch(url, {
           method: 'GET',
-          headers: { 'X-Riot-Token': this.opts.apiKey, 'Accept': 'application/json' },
-          headersTimeout: 10_000,
-          bodyTimeout: 30_000,
+          headers: { 'X-Riot-Token': this.opts.apiKey, Accept: 'application/json' },
+          signal: AbortSignal.timeout(15_000),
         });
-        status = res.statusCode;
-        headers = res.headers as Record<string, string | string[] | undefined>;
-        body = await res.body.text();
+        body = await response.text();
       } catch (err) {
-        // Panne réseau : on retente, mais sans toucher au coupe-circuit — le
-        // quota n'est pas en cause.
+        // Panne réseau : on retente, sans toucher au coupe-circuit — le quota
+        // n'est pas en cause.
         if (attempt++ >= this.maxRetries) throw err;
         await sleep(2 ** attempt * 250 + Math.random() * 250);
         continue;
       }
 
-      await this.syncFromHeaders(o.method, o.platform, headers);
+      await this.syncFromHeaders(o.method, o.platform, response.headers);
 
-      if (status >= 200 && status < 300) {
-        return JSON.parse(body) as T;
-      }
+      if (response.ok) return JSON.parse(body) as T;
 
-      if (status === 404) throw new NotFoundError(o.method, url);
+      if (response.status === 404) throw new NotFoundError(o.method, url);
 
-      if (status === 429) {
-        const retryAfterMs = parseRetryAfterMs(
-          typeof headers['retry-after'] === 'string' ? headers['retry-after'] : null,
+      if (response.status === 429) {
+        const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'));
+        this.logger.warn(
+          { method: o.method, retryAfterMs, type: response.headers.get('x-rate-limit-type') },
+          'riot 429',
         );
-        const type = headers['x-rate-limit-type'];
-        this.logger.warn({ method: o.method, retryAfterMs, type }, 'riot 429');
         await this.limiter.openBreaker(retryAfterMs);
-        // On ne retente pas dans le process : le job retourne en file avec son
-        // backoff, ce qui laisse le coupe-circuit faire son travail.
+        // On ne retente pas ici : l'appelant replanifie, ce qui laisse le
+        // coupe-circuit faire son travail.
         throw new RateLimitedError(o.method, url, retryAfterMs);
       }
 
-      if (status >= 500 && attempt++ < this.maxRetries) {
+      if (response.status >= 500 && attempt++ < this.maxRetries) {
         await sleep(2 ** attempt * 250 + Math.random() * 250);
         continue;
       }
 
-      throw new RiotApiError(status, o.method, url, body.slice(0, 200));
+      throw new RiotApiError(response.status, o.method, url, body.slice(0, 200));
     }
   }
 

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Les types du runtime Workers sont générés dans worker-configuration.d.ts
+    // et déclarent leurs propres globaux : les types Node y seraient en conflit.
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src/**/*.ts", "worker-configuration.d.ts"]
+}

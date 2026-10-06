@@ -1,0 +1,182 @@
+/* Fond entièrement transparent : seule la fenêtre Electron est transparente,
+   le body doit l'être aussi, sinon on obtient un rectangle noir plein écran. */
+:root {
+  --bg: rgba(14, 16, 22, 0.82);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #eef1f6;
+  --muted: #9aa3b2;
+  --order: #4ea1ff;
+  --chaos: #ff6b6b;
+  --warn: #ffc857;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--text);
+  /* L'overlay ne doit jamais capter la souris : la fenêtre est déjà en
+     ignore-mouse-events, ceci couvre le cas où on la rendrait interactive. */
+  user-select: none;
+  cursor: default;
+}
+
+.panel {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  min-width: 430px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  backdrop-filter: blur(8px);
+}
+
+.panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.panel__title { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.panel__clock { font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.objectives { display: flex; gap: 14px; margin-bottom: 10px; }
+
+.objective { font-size: 13px; font-variant-numeric: tabular-nums; }
+.objective__label { color: var(--muted); margin-right: 5px; }
+.objective--ready { color: var(--warn); }
+.objective--gone { opacity: 0.4; }
+
+.players { display: grid; gap: 3px; }
+
+.player {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto auto;
+  gap: 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 0;
+}
+
+.player--order { border-left: 2px solid var(--order); padding-left: 7px; }
+.player--chaos { border-left: 2px solid var(--chaos); padding-left: 7px; }
+.player--dead { opacity: 0.45; }
+.player__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player__sub { color: var(--muted); }
+.player__rank { color: var(--muted); font-size: 11px; }
+
+.notice { margin-top: 9px; font-size: 11px; color: var(--warn); }
+.notice:empty { display: none; }
+
+.status {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.status[hidden] { display: none; }
+
+/* --- Sélection des champions ------------------------------------------- */
+
+/* Jusqu'à cinq adversaires, chacun avec ses objets : le panneau doit rester
+   dans l'écran plutôt que de déborder sous la barre des tâches. */
+.panel--draft {
+  min-width: 340px;
+  max-width: 420px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.teams { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 11px; }
+
+.team__title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.team__row { font-size: 12px; padding: 1px 0; }
+.team__row--me { color: var(--warn); }
+.team__pos { color: var(--muted); margin-left: 5px; font-size: 11px; }
+
+.build__title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.build__summary { font-size: 12px; margin-bottom: 6px; }
+.build__row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 1px 0;
+}
+.build__meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* L'avertissement d'échantillon faible doit être lisible, pas discret : il
+   change l'interprétation de tout ce qui est au-dessus. */
+.build__warning { font-size: 11px; color: var(--warn); margin-top: 6px; }
+.build__empty { font-size: 12px; color: var(--muted); }
+
+.build + .build { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border); }
+
+.collector {
+  margin-top: 9px;
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.collector:empty { display: none; }
+.collector--error { color: var(--warn); }
+
+/* --- Vignettes ------------------------------------------------------------
+   Volontairement discrètes : l'overlay se superpose au jeu, il doit se lire
+   d'un coup d'œil sans attirer l'attention. Pas d'animation ici. */
+
+.iconned { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.iconned__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  flex: none;
+  background: rgba(255, 255, 255, 0.04);
+  object-fit: cover;
+}
+
+/* Les lignes d'équipe et de build deviennent des conteneurs flex : le libellé
+   prend la place restante, la métrique reste calée à droite. */
+.team__row { display: flex; align-items: center; gap: 6px; }
+.build__row > .iconned { flex: 1; min-width: 0; }
+
+/* Écart d'or : le signe est écrit, la couleur ne fait que renforcer. */
+.gold { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gold--above { color: var(--order); }
+.gold--below { color: var(--chaos); }
+
+.matchup__items {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 5px 24px;
+}
+.matchup__items .thumb { width: 16px; height: 16px; }
+.matchup__items .iconned__text { display: none; }

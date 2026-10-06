@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Laneform — Configuration</title>
+    <link rel="stylesheet" href="setup.css" />
+  </head>
+  <body>
+    <main class="setup">
+      <h1 class="setup__title">Clé API Riot</h1>
+      <p class="setup__intro">
+        Laneform a besoin d’une clé personnelle pour afficher les rangs des joueurs
+        et collecter les statistiques de builds. Le reste de l’overlay fonctionne
+        sans.
+      </p>
+      <p class="setup__intro">
+        Créez-en une gratuitement sur
+        <span class="setup__link">developer.riotgames.com</span>, puis collez-la
+        ci-dessous.
+      </p>
+
+      <label class="setup__label" for="key">Clé</label>
+      <input
+        id="key"
+        class="setup__input"
+        type="text"
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="RGAPI-…"
+      />
+
+      <p id="message" class="setup__message"></p>
+
+      <div class="setup__actions">
+        <button id="skip" class="btn btn--ghost" type="button">Plus tard</button>
+        <button id="save" class="btn btn--primary" type="button">Vérifier et enregistrer</button>
+      </div>
+
+      <p id="path" class="setup__path"></p>
+    </main>
+    <script src="setup.js"></script>
+  </body>
+</html>

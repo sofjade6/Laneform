@@ -108,3 +108,15 @@ export interface MatchIdsQuery {
   startTime?: number;
   endTime?: number;
 }
+
+export interface LeagueListDto {
+  tier: string;
+  queue: string;
+  entries: {
+    /** Absent sur les réponses anciennes : le collecteur ignore ces entrées. */
+    puuid?: string;
+    leaguePoints: number;
+    wins: number;
+    losses: number;
+  }[];
+}

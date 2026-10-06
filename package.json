@@ -2,10 +2,15 @@
   "name": "laneform",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
-  "workspaces": ["packages/*", "apps/*"],
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "typecheck": "tsc --noEmit --pretty",
+    "typecheck": "tsc --noEmit --pretty && tsc --noEmit --pretty -p apps/desktop/tsconfig.renderer.json && tsc --noEmit --pretty -p apps/api/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
@@ -13,7 +18,11 @@
     "db:generate": "npm run -w @laneform/db generate",
     "db:migrate": "npm run -w @laneform/db migrate",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
-    "infra:down": "docker compose -f infra/docker-compose.yml down"
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "desktop:dev": "npm run -w @laneform/desktop dev",
+    "desktop:build": "npm run -w @laneform/desktop build",
+    "api:dev": "npm run -w @laneform/api dev",
+    "api:deploy": "npm run -w @laneform/api deploy"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>Laneform Overlay</title>
+    <link rel="stylesheet" href="overlay.css" />
+  </head>
+  <body>
+    <div id="game" class="panel" hidden>
+      <header class="panel__head">
+        <span class="panel__title">Laneform</span>
+        <span id="clock" class="panel__clock">0:00</span>
+      </header>
+      <section id="objectives" class="objectives"></section>
+      <section id="players" class="players"></section>
+      <footer id="notice" class="notice"></footer>
+    </div>
+
+    <div id="draft" class="panel panel--draft" hidden>
+      <header class="panel__head">
+        <span class="panel__title">Sélection</span>
+        <span id="draft-champion" class="panel__clock"></span>
+      </header>
+      <section id="draft-teams" class="teams"></section>
+      <section id="draft-matchups" class="build"></section>
+      <section id="draft-global" class="build"></section>
+      <section id="draft-build" class="build"></section>
+      <footer id="draft-collector" class="collector"></footer>
+    </div>
+
+    <div id="status" class="status">En attente du client League…</div>
+    <script src="overlay.js"></script>
+  </body>
+</html>

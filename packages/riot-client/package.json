@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "dependencies": {
     "@laneform/shared": "*",
-    "ioredis": "^5.4.1",
-    "undici": "^7.2.0"
+    "ioredis": "^5.4.1"
   }
 }

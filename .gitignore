@@ -6,3 +6,11 @@ dist/
 coverage/
 .next/
 .DS_Store
+
+# build Electron
+apps/desktop/dist/
+apps/desktop/release/
+
+# secrets Workers
+apps/api/.dev.vars
+apps/api/.wrangler/

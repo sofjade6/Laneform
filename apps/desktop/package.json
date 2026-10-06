@@ -1,0 +1,68 @@
+{
+  "name": "@laneform/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs && electron .",
+    "start": "electron .",
+    "dist": "node scripts/build.mjs && electron-builder --win",
+    "seed:update": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "@laneform/shared": "*",
+    "@laneform/stats": "*",
+    "undici": "^7.2.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13",
+    "electron": "33.4.11",
+    "esbuild": "^0.24.2",
+    "electron-builder": "^25.1.8"
+  },
+  "description": "Overlay League of Legends : stats en partie, timers d'objectifs et aide au draft.",
+  "author": {
+    "name": "Laneform"
+  },
+  "build": {
+    "appId": "app.laneform.overlay",
+    "productName": "Laneform",
+    "copyright": "Laneform. Non affilie a Riot Games.",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Laneform"
+    },
+    "extraResources": [
+      {
+        "from": "seed",
+        "to": "seed",
+        "filter": [
+          "aggregates.json"
+        ]
+      }
+    ]
+  }
+}
