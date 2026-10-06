@@ -235,8 +235,8 @@ timelines, ClickHouse, SEO, rendu serveur, et l'historique de rank irrattrapable
 
 Ce qui survit : `@laneform/riot-client` et son rate limiter (pour le backend),
 `@laneform/stats` (les calculs dérivés restent utiles sur les parties live),
-`@laneform/shared`. `@laneform/db` est mis de côté jusqu'à ce qu'un besoin de
-persistance apparaisse.
+`@laneform/shared`. Aucune base de données n'est nécessaire : les statistiques
+sont des compteurs dans un fichier JSON local.
 
 ---
 

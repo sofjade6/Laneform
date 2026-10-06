@@ -15,8 +15,6 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "fmt": "prettier --write .",
-    "db:generate": "npm run -w @laneform/db generate",
-    "db:migrate": "npm run -w @laneform/db migrate",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "desktop:dev": "npm run -w @laneform/desktop dev",
