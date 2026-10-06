@@ -84,6 +84,65 @@ Le code est public : ces affirmations sont vérifiables.
 
 ---
 
+## For Riot Games reviewers
+
+**Laneform** is a free, open-source Windows desktop companion for League of
+Legends. It helps players improve by surfacing information they already have
+access to, at the moment it is useful.
+
+During champion select it shows each player's own best-performing builds on
+the champion they locked, builds commonly played at high elo, and the expected
+gold difference at 14 minutes against each enemy champion. In game, a
+transparent overlay shows the match clock, objective respawn timers, and the
+live scoreboard with each player's rank.
+
+Rather than publishing champion win rates, which are noisy at any realistic
+sample size, Laneform reports lane gold difference — a continuous measure that
+converges far faster and answers the question a player actually asks during
+draft: is this lane going to be hard?
+
+Statistics are computed locally on the player's machine. Matches are
+downloaded, reduced to counters, and discarded: no match data and no player
+identifiers are retained.
+
+### API usage
+
+| Endpoint | Purpose |
+|---|---|
+| `ACCOUNT-V1` `/accounts/by-riot-id` | Resolve Riot IDs of players in the current match |
+| `LEAGUE-V4` `/entries/by-puuid` | Their ranked tier |
+| `LEAGUE-V4` `/challengerleagues` | Seed for the background statistics crawler |
+| `MATCH-V5` `/by-puuid/ids` | Recent ranked match ids |
+| `MATCH-V5` `/matches/{id}` | Match detail, aggregated then discarded |
+| `MATCH-V5` `/matches/{id}/timeline` | Item purchase order, sampled and capped per champion and role |
+
+Rank lookups are served by a Cloudflare Worker that holds the API key and
+caches results for 10 minutes. The desktop application never holds a
+production key.
+
+Outgoing requests are funnelled through a single rate-limited client that
+tracks both app and method limits, resynchronises against the
+`X-App-Rate-Limit-Count` headers on every response, and opens a global circuit
+breaker on any 429. Background collection is capped at half of the available
+quota and pauses entirely while the player is in a game.
+
+### Compliance
+
+Laneform reads only officially provided interfaces: the League Client API, the
+Live Client Data API, and the public Riot Games API.
+
+It does not interact with the game process, does not read game memory, does not
+automate any in-game action, and does not display information a player could
+not obtain themselves. The overlay is a separate always-on-top window and
+requires borderless or windowed mode, like every other overlay.
+
+The source code is public and these claims can be verified. See also the
+[privacy policy](./PRIVACY.md).
+
+Laneform is not affiliated with Riot Games.
+
+---
+
 ## Développement
 
 ```bash
